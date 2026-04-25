@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maliyet İterasyon Takip</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f7f6;
+    --surface: #ffffff;
+    --border: #e4e4e2;
+    --text: #1a1a1a;
+    --text-2: #6b6b6b;
+    --text-3: #b0b0b0;
+    --check-fill: #1a1a1a;
+    --tag-bg: #efefee;
+    --tag-text: #888;
+    --progress-fill: #1a1a1a;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 52px 20px 80px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 600px;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 40px;
+  }
+
+  .title-block h1 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .title-block p {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+
+  /* Counter */
+  .counter-block { text-align: right; }
+  .counter-label {
+    font-size: 11px;
+    color: var(--text-3);
+    display: block;
+    margin-bottom: 1px;
+  }
+  .counter-display {
+    font-size: 42px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+  .counter-display.bump {
+    animation: bump 0.3s ease;
+  }
+  @keyframes bump {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  /* Progress */
+  .progress-wrap {
+    height: 1px;
+    background: var(--border);
+    margin-bottom: 28px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--progress-fill);
+    transition: width 0.4s ease;
+  }
+
+  /* Steps */
+  .steps { display: flex; flex-direction: column; }
+
+  .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.15s;
+  }
+  .step:first-child { border-top: 1px solid var(--border); }
+  .step:hover:not(.done) { opacity: 0.6; }
+  .step.done { cursor: default; }
+  .step.done:hover { opacity: 1; }
+
+  /* Checkbox */
+  .step-check {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    transition: background 0.18s, border-color 0.18s;
+  }
+  .step.done .step-check {
+    background: var(--check-fill);
+    border-color: var(--check-fill);
+  }
+  .check-icon {
+    opacity: 0;
+    transform: scale(0.4);
+    transition: opacity 0.18s, transform 0.18s;
+  }
+  .step.done .check-icon { opacity: 1; transform: scale(1); }
+
+  /* Content */
+  .step-content { flex: 1; min-width: 0; }
+
+  .step-meta {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 3px;
+  }
+  .step-num { font-size: 11px; color: var(--text-3); font-weight: 500; }
+  .step-app {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    text-transform: uppercase;
+  }
+
+  .step-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .step.done .step-title {
+    color: var(--text-3);
+    text-decoration: line-through;
+    text-decoration-color: var(--text-3);
+  }
+
+  .step-desc {
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.65;
+    margin-top: 3px;
+  }
+  .step.done .step-desc { display: none; }
+
+  .step-note {
+    margin-top: 7px;
+    font-size: 11px;
+    color: var(--text-3);
+    padding-left: 9px;
+    border-left: 1.5px solid var(--border);
+    line-height: 1.6;
+  }
+  .step.done .step-note { display: none; }
+
+  .step-time {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 3px;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .step.done .step-time { opacity: 1; }
+
+  /* Actions */
+  .actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 13px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-2);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .btn:hover { background: #efefee; color: var(--text); }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-3);
+  }
+  .btn-ghost:hover { background: transparent; border-color: transparent; color: #c0392b; }
+
+  /* Status */
+  .status-bar {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: var(--text-3);
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .status-val { color: var(--text-2); font-weight: 500; }
+
+  /* Flash */
+  .flash-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.03);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 999;
+    transition: opacity 0.08s;
+  }
+  .flash-overlay.active { opacity: 1; }
+
+  @media (max-width: 460px) {
+    header { flex-direction: column; gap: 16px; }
+    .counter-block { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<div class="flash-overlay" id="flashOverlay"></div>
+
+<div class="container">
+  <header>
+    <div class="title-block">
+      <h1>Maliyet İterasyon Takibi</h1>
+      <p>Sentes-BIR · ERP Workflow</p>
+    </div>
+    <div class="counter-block">
+      <span class="counter-label">Tamamlanan iterasyon</span>
+      <div class="counter-display" id="counterDisplay">0</div>
+    </div>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-fill" id="progressBar" style="width:0%"></div>
+  </div>
+
+  <div class="steps" id="stepsContainer"></div>
+
+  <div class="actions">
+    <button class="btn" id="btnReset">Yeni İterasyon</button>
+    <button class="btn btn-ghost" id="btnResetCounter">Sayacı sıfırla</button>
+  </div>
+
+  <div class="status-bar">
+    <span>Adım <span class="status-val" id="statusSteps">0 / 6</span></span>
+    <span id="statusIter">—</span>
+  </div>
+</div>
+
+<script>
+const STEPS_DATA = [
+  {
+    num: '01', app: 'INCT01',
+    title: 'Fiyat ver ve liste çağır',
+    desc: 'INCT01 uygulamasına fiyat yazıp "Fiyat Ver" butonuna tıklanır. İşlem bitince otomatik liste çağırır ve tutarlar.',
+    note: 'Listenin gelmemesi sorun teşkil etmez — tüm malzemeler tutarlanınca listelenmez.'
+  },
+  {
+    num: '02', app: 'PRCT01',
+    title: '"Seç" butonuna tıkla, işlem bitimini bekle',
+    desc: 'PRCT01 uygulamasında "Seç" butonuna tıklanır. Verileri listeler ve iş emirlerini maliyetlendirir. "İşlemi Durdur" butonu ekrana gelir.',
+    note: '"İşlemi Durdur" butonu kaybolunca sonraki adıma geçilir.'
+  },
+  {
+    num: '03', app: 'INCT01',
+    title: '"1. Adım" butonuna tıkla, işlem bitimini bekle',
+    desc: 'INCT01\'e dönülür. "1.Adım" butonuna tıklanır. Stok tutarlarını siler, listeyi yeniden çağırır ve iş emri maliyetlerinden binen tutarlarla tekrar tutarlar.',
+    note: 'Tutarlanırken sağ altta DB Error mesajı çıkabilir — önemli değil. "İşlemi Durdur" kaybolunca devam et.'
+  },
+  {
+    num: '04', app: 'INCT01',
+    title: '"Seç" butonuna tekrar tıkla, işlem bitimini bekle',
+    desc: 'INCT01\'deki "Seç" butonuna tıklanır. Tekrar listeler ve tutarlar. "İşlemi Durdur" butonu ekrana gelir.',
+    note: 'Malzemeden malzemeye transferler 2. kez tutarlama ister; yoksa eksik tutarlanmış stok hareketi kalır.'
+  },
+  {
+    num: '05', app: 'PRCT31',
+    title: 'Bakiye kolonunu kontrol et',
+    desc: 'PRCT31\'e dönülür, arama butonuna basılır. Tablo listelendikten sonra Bakiye kolonu (son kolon) kontrol edilir.',
+    note: 'Tüm değerler ~0,01 civarında → iterasyon tamamlandı ✓   Değilse → 6. adıma geç.'
+  },
+  {
+    num: '06', app: 'INCT01',
+    title: '"2. Adım" butonuna bas, iterasyonu yeniden başlat',
+    desc: 'INCT01\'e dönülür. "2.Adım" butonuna basılır. Bu buton PRCT01\'deki iş emri maliyetlerini sıfırlar.',
+    note: 'İterasyon adımları baştan yapılır (1. Adım\'a dön).'
+  }
+];
+
+let completedSteps = 0;
+let counter = parseInt(localStorage.getItem('iterCounter') || '0');
+let timestamps = {};
+
+function getTime() {
+  return new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function renderSteps() {
+  const container = document.getElementById('stepsContainer');
+  container.innerHTML = '';
+  STEPS_DATA.forEach((s, i) => {
+    const done = i < completedSteps;
+    const div = document.createElement('div');
+    div.className = 'step' + (done ? ' done' : '');
+    div.innerHTML = `
+      <div class="step-check">
+        <svg class="check-icon" width="9" height="9" viewBox="0 0 9 9" fill="none">
+          <polyline points="1,4.5 3.5,7 8,1.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="step-content">
+        <div class="step-meta">
+          <span class="step-num">${s.num}</span>
+          <span class="step-app">${s.app}</span>
+        </div>
+        <div class="step-title">${s.title}</div>
+        <div class="step-desc">${s.desc}</div>
+        ${s.note ? `<div class="step-note">${s.note}</div>` : ''}
+        <div class="step-time" id="ts-${i}">${timestamps[i] || ''}</div>
+      </div>
+    `;
+    if (!done) div.addEventListener('click', () => tickStep(i));
+    container.appendChild(div);
+  });
+}
+
+function tickStep(index) {
+  if (index !== completedSteps) return;
+  completedSteps = index + 1;
+  timestamps[index] = getTime();
+  renderSteps();
+  updateUI();
+  if (completedSteps === 6) setTimeout(completeSet, 250);
+}
+
+function completeSet() {
+  counter++;
+  localStorage.setItem('iterCounter', counter);
+  const display = document.getElementById('counterDisplay');
+  display.textContent = counter;
+  display.classList.remove('bump');
+  void display.offsetWidth;
+  display.classList.add('bump');
+  const flash = document.getElementById('flashOverlay');
+  flash.classList.add('active');
+  setTimeout(() => flash.classList.remove('active'), 280);
+  updateUI();
+}
+
+function updateUI() {
+  document.getElementById('progressBar').style.width = (completedSteps / 6 * 100) + '%';
+  document.getElementById('statusSteps').textContent = completedSteps + ' / 6';
+  document.getElementById('counterDisplay').textContent = counter;
+  document.getElementById('statusIter').textContent =
+    counter === 0 ? '—' : counter + ' iterasyon tamamlandı';
+}
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  completedSteps = 0; timestamps = {};
+  renderSteps(); updateUI();
+});
+document.getElementById('btnResetCounter').addEventListener('click', () => {
+  if (confirm('Sayaç sıfırlansın mı?')) {
+    counter = 0;
+    localStorage.setItem('iterCounter', 0);
+    updateUI();
+  }
+});
+
+renderSteps();
+updateUI();
+</script>
+</body>
+</html>
